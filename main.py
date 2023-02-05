@@ -3,6 +3,8 @@ import pymongo
 from bson import json_util
 import json
 import math
+import sympy
+from sympy import symbols, Eq, solve, log #to solve complex distance functions
 
 
 app = Flask(__name__, )
@@ -161,13 +163,59 @@ def get_location():
             if sortedDis[2][0] == _["Site ID"]:
                 r2 = ericson(float(_["freq"]),float(_["Height (m)"]),float(_["Power (dBm)"]),_["rsrp"])
         print(r0,r1,r2)
+        #calculate intersection points and get the avg point
+        x0 , y0 = get_intersections()
+        x1 , y1 = get_intersections()
+        x2, y2 = get_intersections()
+        
+        valid=True
+        for cord in [x1,x2,x3,y1,y2,y3]:
+            if cord == None : 
+            print("invalid data")
+            valid=False
 
+        if valid:
+            resultx=sum([x1,x2,x3])/3)
+            resulty(sum([y1,y2,y3])/3)
 
         return json_cell_info
     except Exception as ex:
         print(ex)
         return Response(response=json.dumps({"message": "sorry cannot update user"}), status=500,
                         mimetype="application/json")
+    
+    
+def get_intersections(x0, y0, r0, x1, y1, r1, x2, y2, r2):
+    # circle 1: (x0, y0), radius r0
+    # circle 2: (x1, y1), radius r1
+
+    d=math.sqrt((x1-x0)**2 + (y1-y0)**2)
+    
+    # non intersecting
+    if d > r0 + r1 :
+        return None,None
+    # One circle within other
+    if d < abs(r0-r1):
+        return None,None
+    # coincident circles
+    if d == 0 and r0 == r1:
+        return None,None
+    else:
+        a=(r0**2-r1**2+d**2)/(2*d)
+        h=math.sqrt(r0**2-a**2)
+        x2=x0+a*(x1-x0)/d   
+        y2=y0+a*(y1-y0)/d   
+        x3=x2+h*(y1-y0)/d     
+        y3=y2-h*(x1-x0)/d 
+
+        x4=x2-h*(y1-y0)/d
+        y4=y2+h*(x1-x0)/d
+        
+        if (math.sqrt((x2-x3)**2 + (y2-y3)**2)<r2):
+            return(x3,y3)
+        else:
+            return(x4,y4)
+        
     
 ###########################
 if (__name__ == "__main__"):
