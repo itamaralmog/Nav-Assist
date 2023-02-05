@@ -139,7 +139,7 @@ def ericson(freq,hb,p,rsrp):
 def get_location():
     try:
         listStationsByDis ={}
-        listStationsByDis[cell_tower_list[0]["Site ID"]] =0
+        listStationsByDis[(cell_tower_list[0]["Site ID"],cell_tower_list[0]["Latitude"],cell_tower_list[0]["Longitude"])] =0
         for _ in cell_tower_list:
         # print(cell_tower_list)
             print(_)
@@ -149,34 +149,37 @@ def get_location():
                 x1,y1 = _["Latitude"] , _["Longitude"]
                 p0 = [float(x0),float(y0)]
                 p1 = [float(x1),float(y1)]
-                listStationsByDis[_["Site ID"]] = math.dist(p0,p1)
+                tuplei = (_["Site ID"],_["Latitude"],_["Longitude"])
+                # listStationsByDis[_["Site ID"]] = math.dist(p0,p1)
+                listStationsByDis[tuplei] = math.dist(p0,p1)
+        print(listStationsByDis)
         json_cell_info = json.dumps(cell_tower_list)
         sortedDis = sorted(listStationsByDis.items(),key=lambda x:x[1])
 
         print(sortedDis)
         r0,r1,r2 = 0,0,0
         for _ in cell_tower_list:
-            if sortedDis[0][0] == _["Site ID"]:
-                r0 = ericson(float(_["freq"]),float(_["Height (m)"]),float(_["Power (dBm)"]),_["rsrp"])
-            if sortedDis[1][0] == _["Site ID"]:
-                r1 = ericson(float(_["freq"]),float(_["Height (m)"]),float(_["Power (dBm)"]),_["rsrp"])
-            if sortedDis[2][0] == _["Site ID"]:
-                r2 = ericson(float(_["freq"]),float(_["Height (m)"]),float(_["Power (dBm)"]),_["rsrp"])
+            if sortedDis[0][0][0] == _["Site ID"]:
+                r0 = ericson(float(_["freq"]),float(_["Height (m)"]),float(_["Power (dBm)"]),float(_["rsrp"]))
+            if sortedDis[1][0][0] == _["Site ID"]:
+                r1 = ericson(float(_["freq"]),float(_["Height (m)"]),float(_["Power (dBm)"]),float(_["rsrp"]))
+            if sortedDis[2][0][0] == _["Site ID"]:
+                r2 = ericson(float(_["freq"]),float(_["Height (m)"]),float(_["Power (dBm)"]),float(_["rsrp"]))
         print(r0,r1,r2)
         #calculate intersection points and get the avg point
-        x0 , y0 = get_intersections()
-        x1 , y1 = get_intersections()
-        x2, y2 = get_intersections()
+        x0 , y0 = get_intersections(float(sortedDis[0][0][1]),float(sortedDis[0][0][2]),r0,float(sortedDis[1][0][1]),float(sortedDis[1][0][2]),r1,float(sortedDis[2][0][1]),float(sortedDis[2][0][2]),r2)
+        x1 , y1 = get_intersections(float(sortedDis[2][0][1]),float(sortedDis[2][0][2]),r2,float(sortedDis[0][0][1]),float(sortedDis[0][0][2]),r0,float(sortedDis[1][0][1]),float(sortedDis[1][0][2]),r1)
+        x2, y2 = get_intersections(float(sortedDis[1][0][1]),float(sortedDis[1][0][2]),r1,float(sortedDis[2][0][1]),float(sortedDis[2][0][2]),r2,float(sortedDis[0][0][1]),float(sortedDis[0][0][2]),r0)
         
         valid=True
-        for cord in [x1,x2,x3,y1,y2,y3]:
+        for cord in [x1,x2,x0,y1,y2,y0]:
             if cord == None : 
-            print("invalid data")
-            valid=False
+                print("invalid data")
+                valid=False
 
         if valid:
-            resultx=sum([x1,x2,x3])/3)
-            resulty(sum([y1,y2,y3])/3)
+            resultx=sum([x1,x2,x0])/3
+            resulty=(sum([y1,y2,y0])/3)
 
         return json_cell_info
     except Exception as ex:
